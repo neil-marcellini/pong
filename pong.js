@@ -1,15 +1,22 @@
+class Paddle {
+  static wallMargin = 10;
+  static width = 20;
+  static height = 80;
+  static speed = 5;
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.y = this.canvas.height / 2 - Paddle.height / 2;
+    this.velocity = 0;
+  }
+}
+
 class Player {
   constructor(canvas, ctx, playerNumber) {
     this.canvas = canvas;
     this.ctx = ctx;
     this.playerNumber = playerNumber;
     this.score = 0;
-    this.paddleWallMargin = 10;
-    this.paddleWidth = 20;
-    this.paddleHeight = 80;
-    this.paddleY = this.canvas.height / 2 - this.paddleHeight / 2;
-    this.paddleVelocity = 0;
-    this.paddleSpeed = 5;
+    this.paddle = new Paddle(this.canvas);
     this.addKeyListeners();
   }
 
@@ -31,9 +38,9 @@ class Player {
       return;
     }
     if (up) {
-      this.paddleVelocity = -5;
+      this.paddle.velocity = -5;
     } else if (down) {
-      this.paddleVelocity = 5;
+      this.paddle.velocity = 5;
     }
   }
 
@@ -43,30 +50,30 @@ class Player {
     if (!up && !down) {
       return;
     }
-    this.paddleVelocity = 0;
+    this.paddle.velocity = 0;
   }
 
   updatePaddleY() {
-    let newPaddleY = this.paddleY + this.paddleVelocity;
+    let newPaddleY = this.paddle.y + this.paddle.velocity;
     if (newPaddleY < 0) {
       newPaddleY = 0;
     }
-    if (newPaddleY + this.paddleHeight > this.canvas.height) {
-      newPaddleY = this.canvas.height - this.paddleHeight;
+    if (newPaddleY + Paddle.height > this.canvas.height) {
+      newPaddleY = this.canvas.height - Paddle.height;
     }
-    this.paddleY = newPaddleY;
+    this.paddle.y = newPaddleY;
     this.drawPaddle();
   }
 
   drawPaddle() {
     let x;
     if (this.playerNumber === 1) {
-      x = this.paddleWallMargin;
+      x = Paddle.wallMargin;
     } else {
-      x = this.canvas.width - this.paddleWidth - this.paddleWallMargin;
+      x = this.canvas.width - Paddle.width - Paddle.wallMargin;
     }
     this.ctx.fillStyle = '#fff';
-    this.ctx.fillRect(x, this.paddleY, this.paddleWidth, this.paddleHeight);
+    this.ctx.fillRect(x, this.paddle.y, Paddle.width, Paddle.height);
   }
   
 }
@@ -105,6 +112,14 @@ class PongGame {
   drawScreen() {
     this.ctx.fillStyle = '#000';
     this.ctx.fillRect(0,0,this.canvas.width, this.canvas.height);
+    // Dashed line
+    this.ctx.strokeStyle = '#fff';
+    this.ctx.beginPath();
+    this.ctx.lineWidth = 10;
+    this.ctx.setLineDash([20, 10]);
+    this.ctx.moveTo(this.midWidth, 0);
+    this.ctx.lineTo(this.midWidth, this.canvas.height);
+    this.ctx.stroke();
   }
 
   drawBall() {
@@ -165,13 +180,25 @@ class PongGame {
   }
 
   detectPaddleHit(newBallX, newBallY) {
-
     let ballLeftBoundary = newBallX - this.ballRadius;
+    let leftPaddleTop = this.player1.paddle.y - Paddle.height / 2; 
+    let leftPaddleBottom = this.player1.paddle.y + Paddle.height / 2;
+    let matchesLeftHeight = newBallY >= leftPaddleTop  && newBallY <= leftPaddleBottom;
+    let leftPaddleFront = Paddle.wallMargin + Paddle.width;
+    let hitLeftPaddleFront = ballLeftBoundary < leftPaddleFront && matchesLeftHeight; 
+
     let ballRightBoundary = newBallX + this.ballRadius;
-    let hitLeftPaddleFront = ballLeftBoundary < this.paddleWallMargin + this.paddleWidth;
-    let hitRightPaddleFront = ballRightBoundary > this.canvas.width - this.paddleWallMargin - this.paddleWidth;
+    let rightPaddleTop = this.player2.paddle.y - Paddle.height / 2; 
+    let rightPaddleBottom = this.player2.paddle.y + Paddle.height / 2;
+    let matchesRightHeight = newBallY >= rightPaddleTop  && newBallY <= rightPaddleBottom;
+    let rightPaddleFront = this.canvas.width - Paddle.wallMargin - Paddle.width;
+    let hitRightPaddleFront = ballRightBoundary > rightPaddleFront && matchesRightHeight; 
+
     if (hitLeftPaddleFront || hitRightPaddleFront) {
       this.ballXVelocity *= -1;
+    } else {
+      // someone scored
+
     }
 
   }
