@@ -1,9 +1,73 @@
 class Player {
-  constructor(playerNumber) {
+  constructor(canvas, ctx, playerNumber) {
+    this.canvas = canvas;
+    this.ctx = ctx;
     this.playerNumber = playerNumber;
     this.score = 0;
+    this.paddleWallMargin = 10;
+    this.paddleWidth = 20;
+    this.paddleHeight = 80;
+    this.paddleY = this.canvas.height / 2 - this.paddleHeight / 2;
+    this.paddleVelocity = 0;
+    this.paddleSpeed = 5;
+    this.addKeyListeners();
   }
 
+  addKeyListeners() {
+    this.upKey = 'ArrowUp';
+    this.downKey = 'ArrowDown';
+    if (this.playerNumber === 1) {
+      this.upKey = 'w'
+      this.downKey = 's'
+    }
+    document.addEventListener('keydown', (e) => this.onKeyDown(e));
+    document.addEventListener('keyup', (e) => this.onKeyUp(e));
+  }
+
+  onKeyDown(e) {
+    const up = e.key === this.upKey;
+    const down = e.key === this.downKey;
+    if (!up && !down) {
+      return;
+    }
+    if (up) {
+      this.paddleVelocity = -5;
+    } else if (down) {
+      this.paddleVelocity = 5;
+    }
+  }
+
+  onKeyUp(e) {
+    const up = e.key === this.upKey;
+    const down = e.key === this.downKey;
+    if (!up && !down) {
+      return;
+    }
+    this.paddleVelocity = 0;
+  }
+
+  updatePaddleY() {
+    let newPaddleY = this.paddleY + this.paddleVelocity;
+    if (newPaddleY < 0) {
+      newPaddleY = 0;
+    }
+    if (newPaddleY + this.paddleHeight > this.canvas.height) {
+      newPaddleY = this.canvas.height - this.paddleHeight;
+    }
+    this.paddleY = newPaddleY;
+    this.drawPaddle();
+  }
+
+  drawPaddle() {
+    let x;
+    if (this.playerNumber === 1) {
+      x = this.paddleWallMargin;
+    } else {
+      x = this.canvas.width - this.paddleWidth - this.paddleWallMargin;
+    }
+    this.ctx.fillStyle = '#fff';
+    this.ctx.fillRect(x, this.paddleY, this.paddleWidth, this.paddleHeight);
+  }
   
 }
 class PongGame {
@@ -17,11 +81,11 @@ class PongGame {
 
     this.ctx = this.canvas.getContext('2d');
 
-    this.paddleWallMargin = 10;
-    this.paddleWidth = 20;
-    this.paddleHeight = 80;
-    this.player1 = new Player(1);
-    this.player2 = new Player(2);
+    
+    this.player1 = new Player(this.canvas, this.ctx, 1);
+    this.player2 = new Player(this.canvas, this.ctx, 2);
+    this.player1.drawPaddle();
+    this.player2.drawPaddle();
 
     this.ballRadius = 20;
     this.ballX = this.midWidth;
@@ -50,16 +114,7 @@ class PongGame {
     this.ctx.fill();
   }
 
-  drawPaddle(y, playerNumber) {
-    let x;
-    if (playerNumber === 1) {
-      x = this.paddleWallMargin;
-    } else {
-      x = this.canvas.width - this.paddleWidth - this.paddleWallMargin;
-    }
-    this.ctx.fillStyle = '#fff';
-    this.ctx.fillRect(x, y, this.paddleWidth, this.paddleHeight);
-  }
+  
 
   /**
    * Set a random initial ball velocity.
@@ -101,19 +156,32 @@ class PongGame {
       this.ballYVelocity *= -1;
     }
 
-    this.ballX = newBallX;
-    this.ballY = newBallY;
+    this.detectPaddleHit(newBallX, newBallY);
+
+    this.ballX = this.ballX + this.ballXVelocity;
+    this.ballY = this.ballY + this.ballYVelocity;
 
     this.drawBall();
+  }
+
+  detectPaddleHit(newBallX, newBallY) {
+
+    let ballLeftBoundary = newBallX - this.ballRadius;
+    let ballRightBoundary = newBallX + this.ballRadius;
+    let hitLeftPaddleFront = ballLeftBoundary < this.paddleWallMargin + this.paddleWidth;
+    let hitRightPaddleFront = ballRightBoundary > this.canvas.width - this.paddleWallMargin - this.paddleWidth;
+    if (hitLeftPaddleFront || hitRightPaddleFront) {
+      this.ballXVelocity *= -1;
+    }
+
   }
 
   animationLoop() {
     this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
     this.drawScreen();
     this.updateBall();
-    this.drawPaddle(this.canvas.height / 2 - this.paddleHeight / 2, 1);
-    this.drawPaddle(this.canvas.height / 2 - this.paddleHeight / 2, 2);
-
+    this.player1.updatePaddleY();
+    this.player2.updatePaddleY();
     requestAnimationFrame(() => this.animationLoop());
   }
 
