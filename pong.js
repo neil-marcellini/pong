@@ -23,6 +23,7 @@ class PongGame {
     this.player1 = new Player(1);
     this.player2 = new Player(2);
 
+    this.ballRadius = 20;
     this.ballX = this.midWidth;
     this.ballY = this.midHeight;
     this.initialBallVelocity();
@@ -42,10 +43,10 @@ class PongGame {
     this.ctx.fillRect(0,0,this.canvas.width, this.canvas.height);
   }
 
-  drawBall(radius = 20) {
+  drawBall() {
     this.ctx.fillStyle = '#fff';
     this.ctx.beginPath()
-    this.ctx.arc(this.ballX, this.ballY, radius, 0, 2 * Math.PI, false);
+    this.ctx.arc(this.ballX, this.ballY, this.ballRadius, 0, 2 * Math.PI, false);
     this.ctx.fill();
   }
 
@@ -78,14 +79,38 @@ class PongGame {
     this.ballYVelocity = Math.max(minVelocity, Math.random() * ballVelocityMultiplier) * yDirection;
   }
 
+  updateBall() {
+    let newBallX = this.ballX + this.ballXVelocity; 
+    let newBallY = this.ballY + this.ballYVelocity;
+
+    let ballLeftBoundary = newBallX - this.ballRadius;
+    let ballRightBoundary = newBallX + this.ballRadius;
+    let hitLeftWall = ballLeftBoundary <= 0;  
+    let hitRightWall = ballRightBoundary >= this.canvas.width;
+
+    if (hitLeftWall || hitRightWall) {
+      this.ballXVelocity *= -1;
+    }
+
+    let ballTopBoundary = newBallY - this.ballRadius;
+    let ballBottomBoundary = newBallY + this.ballRadius;
+    let hitTopWall = ballTopBoundary <= 0;  
+    let hitBottomWall = ballBottomBoundary >= this.canvas.height;
+
+    if (hitTopWall || hitBottomWall) {
+      this.ballYVelocity *= -1;
+    }
+
+    this.ballX = newBallX;
+    this.ballY = newBallY;
+
+    this.drawBall();
+  }
+
   animationLoop() {
     this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
     this.drawScreen();
-
-    // update ball
-    this.ballX = this.ballX + this.ballXVelocity;
-    this.ballY = this.ballY + this.ballYVelocity;
-    this.drawBall();
+    this.updateBall();
     this.drawPaddle(this.canvas.height / 2 - this.paddleHeight / 2, 1);
     this.drawPaddle(this.canvas.height / 2 - this.paddleHeight / 2, 2);
 
