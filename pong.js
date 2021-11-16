@@ -75,6 +75,17 @@ class Player {
     this.ctx.fillStyle = '#fff';
     this.ctx.fillRect(x, this.paddle.y, Paddle.width, Paddle.height);
   }
+
+  drawScore() {
+    let scoreText = String(this.score).padStart(2, '0');
+    this.ctx.fillStyle = "#fff";
+    this.ctx.font = '80px Verdana';
+    let scoreTextPosition = this.canvas.width / 4;
+    if (this.playerNumber !== 1) {
+      scoreTextPosition = 3 * this.canvas.width / 4;
+    }
+    this.ctx.fillText(scoreText, scoreTextPosition, 100);
+  }
   
 }
 class PongGame {
@@ -136,7 +147,7 @@ class PongGame {
    */
   initialBallVelocity() {
     let ballVelocityMultiplier = 5;
-    let minVelocity = 2;
+    let minVelocity = 3;
     let xDirection = 1;
     let yDirection = 1;
     if (Math.random() > 0.5) {
@@ -180,35 +191,67 @@ class PongGame {
   }
 
   detectPaddleHit(newBallX, newBallY) {
-    let ballLeftBoundary = newBallX - this.ballRadius;
-    let leftPaddleTop = this.player1.paddle.y - Paddle.height / 2; 
-    let leftPaddleBottom = this.player1.paddle.y + Paddle.height / 2;
-    let matchesLeftHeight = newBallY >= leftPaddleTop  && newBallY <= leftPaddleBottom;
-    let leftPaddleFront = Paddle.wallMargin + Paddle.width;
-    let hitLeftPaddleFront = ballLeftBoundary < leftPaddleFront && matchesLeftHeight; 
+    const ballLeftBoundary = newBallX - this.ballRadius;
+    const ballRightBoundary = newBallX + this.ballRadius;
+    const ballTopBoundary = newBallY - this.ballRadius;
+    const ballBottomBoundary = newBallY + this.ballRadius;
 
-    let ballRightBoundary = newBallX + this.ballRadius;
-    let rightPaddleTop = this.player2.paddle.y - Paddle.height / 2; 
-    let rightPaddleBottom = this.player2.paddle.y + Paddle.height / 2;
-    let matchesRightHeight = newBallY >= rightPaddleTop  && newBallY <= rightPaddleBottom;
-    let rightPaddleFront = this.canvas.width - Paddle.wallMargin - Paddle.width;
-    let hitRightPaddleFront = ballRightBoundary > rightPaddleFront && matchesRightHeight; 
+    let leftPaddleTop = this.player1.paddle.y; 
+    let leftPaddleBottom = this.player1.paddle.y + Paddle.height;
+    const bottomAtLeftHeight = ballBottomBoundary >= leftPaddleTop && ballBottomBoundary <= leftPaddleBottom;
+    const topAtLeftHeight = ballTopBoundary >= leftPaddleTop && ballTopBoundary <= leftPaddleBottom;
+    const matchesLeftHeight = bottomAtLeftHeight || topAtLeftHeight;
+    const leftPaddleFront = Paddle.wallMargin + Paddle.width;
+    const hitLeftPaddleFront = ballLeftBoundary <= leftPaddleFront; 
+    const hitLeftPaddle = hitLeftPaddleFront && matchesLeftHeight; 
+    const goingLeft = this.ballXVelocity < 0;
 
-    if (hitLeftPaddleFront || hitRightPaddleFront) {
+
+    let rightPaddleTop = this.player2.paddle.y; 
+    let rightPaddleBottom = this.player2.paddle.y + Paddle.height;
+    const bottomAtRightHeight = ballBottomBoundary >= rightPaddleTop && ballBottomBoundary <= rightPaddleBottom;
+    const topAtRightHeight = ballTopBoundary >= rightPaddleTop && ballTopBoundary <= rightPaddleBottom;
+    const matchesRightHeight = bottomAtRightHeight || topAtRightHeight;
+    const rightPaddleFront = this.canvas.width - Paddle.wallMargin - Paddle.width;
+    const hitRightPaddleFront = ballRightBoundary >= rightPaddleFront;
+    const hitRightPaddle = hitRightPaddleFront && matchesRightHeight; 
+    const goingRight = this.ballXVelocity > 0;
+
+    if ((hitLeftPaddle && goingLeft) || (hitRightPaddle && goingRight)) {
       this.ballXVelocity *= -1;
-    } else {
-      // someone scored
-
+      return
     }
 
+    if (hitRightPaddleFront) {
+      // player 1 scored
+      this.player1.score += 1;
+      this.resetBall();
+    }
+
+    if (hitLeftPaddleFront) {
+      this.player2.score += 1;
+      this.resetBall();
+    }
+
+  }
+
+  /**
+   * Moves the ball to the center and gives it a new initial velocity.
+   */
+  resetBall() {
+    this.ballX = this.midWidth;
+    this.ballY = this.midHeight;
+    this.initialBallVelocity();
   }
 
   animationLoop() {
     this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
     this.drawScreen();
-    this.updateBall();
     this.player1.updatePaddleY();
     this.player2.updatePaddleY();
+    this.updateBall();
+    this.player1.drawScore();
+    this.player2.drawScore();
     requestAnimationFrame(() => this.animationLoop());
   }
 
