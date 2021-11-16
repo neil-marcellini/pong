@@ -94,10 +94,10 @@ class PongGame {
     this.midHeight;
     this.midWidth;
     // resize the canvas to fill browser window dynamically
-    window.addEventListener('resize', this.resizeCanvas, false);
+    window.addEventListener('resize', () => this.resizeCanvas(), false);
     this.resizeCanvas();
-
     this.ctx = this.canvas.getContext('2d');
+    this.showMenu();
 
     
     this.player1 = new Player(this.canvas, this.ctx, 1);
@@ -110,7 +110,6 @@ class PongGame {
     this.ballY = this.midHeight;
     this.initialBallVelocity();
 
-    this.animationLoop();
   }
 
   resizeCanvas() {
@@ -118,6 +117,33 @@ class PongGame {
     this.canvas.height = window.innerHeight;
     this.midWidth = this.canvas.width / 2;
     this.midHeight = this.canvas.height / 2;
+  }
+
+  showMenu() {
+    this.ctx.fillStyle = '#000';
+    this.ctx.fillRect(0,0,this.canvas.width, this.canvas.height);
+    const menuHeight = 100;
+    const playerTextHeight = 200;
+    this.ctx.textAlign = 'center';
+    this.ctx.fillStyle = "#fff";
+    this.ctx.font = '80px Verdana';
+    this.ctx.fillText('Pong', this.midWidth, menuHeight);
+    this.ctx.font = '20px Verdana';
+    this.ctx.fillText('Player 1', this.midWidth / 2, playerTextHeight);
+    this.ctx.fillText('w = up, s = down', this.midWidth / 2, playerTextHeight + 50);
+    this.ctx.fillText('Player 2', this.midWidth + this.midWidth / 2, playerTextHeight);
+    this.ctx.fillText('arrow up, arrow down', this.midWidth + this.midWidth / 2, playerTextHeight + 50);
+
+    this.ctx.font = '40px Verdana';
+    this.ctx.fillText('Press Enter To Start', this.midWidth, this.canvas.height - 100);
+
+    const me = this;
+    document.addEventListener('keydown', function onMenuEnter(e) {
+      if (e.key === 'Enter') {
+        document.removeEventListener('keydown', onMenuEnter);
+        me.animationLoop();
+      }
+    });
   }
 
   drawScreen() {
